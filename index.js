@@ -101,7 +101,7 @@ client.on("ready", () => {
 
 // Función para obtener el texto de ayuda
 function getHelpText() {
-  return `📚 *Comandos disponibles*
+  return `📚 *Comandos disponibles - Bot Cumpleaños*
 
 🔍 *Comandos básicos*
 !ping - Verificar si el bot está activo
@@ -119,14 +119,6 @@ function getHelpText() {
 
 // Escuchar mensajes entrantes
 client.on("message", async (msg) => {
-  // Debug: log incoming message metadata
-  console.log(`📩 Mensaje recibido - from: ${msg.from}, fromMe: ${msg.fromMe}, id: ${msg.id && msg.id._serialized}`);
-
-  // Ignorar mensajes que provienen del mismo cliente (evita loops)
-  if (msg.fromMe) {
-    console.log("↩️ Ignorado mensaje propio (fromMe = true)");
-    return;
-  }
 
   const chat = await msg.getChat();
   const text = msg.body.trim();
@@ -184,20 +176,28 @@ client.on("message", async (msg) => {
   // ✅ Borrar cumpleaños (opcional)
   // Ejemplo: !borrar Juan Pérez
   if (text.startsWith("!borrar")) {
-    const name = text.slice(8).trim().toLowerCase();
+    // Extraer nombre buscado (sin comando) y normalizar solo para comparación
+    const rawName = text.slice(8).trim();
+    const searchName = rawName.toLowerCase();
     const groupId = chat.id._serialized;
 
-    const before = birthdays.length;
-    birthdays = birthdays.filter(
-      (b) => !(b.groupId === groupId && b.name.toLowerCase() === name)
+    // Buscar si existe y obtener el objeto original para conservar capitalización
+    const found = birthdays.find(
+      (b) => b.groupId === groupId && b.name.toLowerCase() === searchName
     );
 
-    if (birthdays.length === before) {
-      msg.reply("❌ No se encontró ese nombre en este grupo.");
-    } else {
-      saveBirthdays();
-      msg.reply(`🗑️ Se eliminó el cumpleaños de ${name}.`);
+    if (!found) {
+      return msg.reply("❌ No se encontró ese nombre en este grupo.");
     }
+
+    // Filtrar para eliminar todos los registros que coincidan con ese nombre en el grupo
+    birthdays = birthdays.filter(
+      (b) => !(b.groupId === groupId && b.name.toLowerCase() === searchName)
+    );
+
+    saveBirthdays();
+    const displayGroupName = chat.name || found.groupName || "este grupo";
+    msg.reply(`🗑️ Se eliminó el cumpleaños de ${found.name} en "${displayGroupName}".`);
   }
 });
 
