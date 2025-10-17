@@ -1,4 +1,5 @@
-import { Client, LocalAuth } from "whatsapp-web.js";
+import pkg from 'whatsapp-web.js';
+const { Client, LocalAuth } = pkg;
 import qrcode from "qrcode";
 import express from "express";
 import http from "http";
@@ -23,8 +24,11 @@ function saveBirthdays() {
   fs.writeFileSync(FILE, JSON.stringify(birthdays, null, 2));
 }
 
+// Middleware para procesar JSON
+app.use(express.json());
+
 // Servir página simple para mostrar QR
-app.get("/", (req, res) => {
+app.get("/login", (req, res) => {
   res.send(`
     <h2>Escanea el QR para conectar WhatsApp</h2>
     <img id="qrcode" src="" />
@@ -36,6 +40,75 @@ app.get("/", (req, res) => {
       });
     </script>
   `);
+});
+
+// Endpoint para obtener todos los cumpleaños
+app.get("/api/birthdays", (req, res) => {
+  res.json(birthdays);
+});
+
+// Endpoint para subir cumpleaños
+app.post("/api/birthdays", (req, res) => {
+  try {
+    const newBirthdays = req.body;
+    
+    // Validar que sea un array
+    if (!Array.isArray(newBirthdays)) {
+      return res.status(400).json({ error: "Los datos deben ser un array de cumpleaños" });
+    }
+
+    // Validar estructura de cada cumpleaños
+    const isValid = newBirthdays.every(birthday => 
+      birthday.name && 
+      birthday.date && 
+      birthday.groupId && 
+      birthday.groupName &&
+      typeof birthday.name === 'string' &&
+      typeof birthday.date === 'string' &&
+      typeof birthday.groupId === 'string' &&
+      typeof birthday.groupName === 'string' &&
+      /^\d{2}-\d{2}$/.test(birthday.date)
+    );
+
+    if (!isValid) {
+      return res.status(400).json({ 
+        error: "Formato inválido. Cada cumpleaños debe tener: name, date (DD-MM), groupId y groupName" 
+      });
+    }
+
+    // Agregar solo cumpleaños que no existan
+    const added = [];
+    const duplicates = [];
+
+    newBirthdays.forEach(birthday => {
+      const exists = birthdays.some(b => 
+        b.date === birthday.date && 
+        b.name.toLowerCase() === birthday.name.toLowerCase() && 
+        b.groupId === birthday.groupId
+      );
+
+      if (!exists) {
+        birthdays.push(birthday);
+        added.push(birthday);
+      } else {
+        duplicates.push(birthday);
+      }
+    });
+
+    // Guardar los cambios
+    saveBirthdays();
+
+    res.json({
+      message: "Proceso completado",
+      added: added.length,
+      duplicates: duplicates.length,
+      total: birthdays.length
+    });
+
+  } catch (error) {
+    console.error("Error procesando cumpleaños:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
 });
 
 // Crear cliente WhatsApp
@@ -144,4 +217,6 @@ client.initialize();
 // Iniciar servidor web
 server.listen(PORT, () => {
   console.log(`🌐 Abierto en http://localhost:${PORT}`);
+  console.log(`🔧 Zona horaria configurada: ${TZ}`);
+  console.log(`URL PARA INICIAR SESIÓN: http://localhost:${PORT}/login`);
 });
