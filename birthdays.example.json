@@ -1,0 +1,11 @@
+[
+  {
+    "name": "Cosmes Fulasnitos",
+    "date": "17-08",
+    "groupId": "groupId",
+    "groupName": "Nombre del grupo",
+    "_meta": {
+        "lastReminderYear": 2023
+    }
+  }
+]
