@@ -1,5 +1,6 @@
 node_modules/
-session/
-.wwebjs_cache/
-.package-lock.json
 birthdays.json
+.wwebjs_cache/
+session/
+.DS_Store
+reminders.json
