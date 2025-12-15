@@ -53,8 +53,11 @@ client.on("qr", (qr) => {
 });
 
 // Aviso cuando el bot está listo
-client.on("ready", () => {
+client.on("ready", async () => {
   console.log("✅ Bot conectado y listo.");
+  
+  // Actualizar todos los groupIds al iniciar
+  await updateAllGroupIds();
   
   // Función reutilizable para revisar cumpleaños
   async function checkBirthdays(sendTestForDate, forceYear = null) {
@@ -71,38 +74,11 @@ client.on("ready", () => {
             continue;
           }
 
-          let groupId = person.groupId;
-          
-          // Si no tenemos groupId, intentar buscar por groupName
-          if (!groupId || groupId === "") {
-            const chats = await client.getChats();
-            const found = chats.find(c => c.isGroup && (c.name || "").trim() === (person.groupName || "").trim());
-            
-            if (found) {
-              groupId = found.id._serialized;
-              person.groupId = groupId;
-              saveBirthdays();
-              console.log(`🔁 Resuelto groupId para ${person.groupName} -> ${groupId}`);
-            }
-          }
-
-          if (!groupId || groupId === "") {
-            console.warn(`⚠️ No se pudo resolver groupId para ${person.groupName}, saltando.`);
-            continue;
-          }
-
-          // Validar que el groupId tenga el formato correcto
-          if (!groupId.includes('@g.us')) {
-            console.warn(`⚠️ groupId inválido: ${groupId}. Debe terminar en @g.us`);
-            continue;
-          }
-
-          // Usar getChats para encontrar el chat en lugar de getChatById
-          const chats = await client.getChats();
-          const chat = chats.find(c => c.id._serialized === groupId);
+          // Intentar obtener el chat actualizado
+          const chat = await getGroupChat(person);
           
           if (!chat) {
-            console.warn(`⚠️ No se encontró el chat con ID: ${groupId}`);
+            console.warn(`⚠️ No se pudo encontrar el grupo para ${person.name} (${person.groupName})`);
             continue;
           }
 
@@ -118,9 +94,77 @@ client.on("ready", () => {
           
           console.log(`🎂 Mensaje enviado a ${person.name} en ${person.groupName} (marcado año ${currentYear})`);
         } catch (err) {
-          console.error("❌ Error enviando mensaje:", err.message);
+          console.error(`❌ Error enviando mensaje a ${person.name}:`, err.message);
         }
       }
+    }
+  }
+
+  // Función para actualizar todos los groupIds
+  async function updateAllGroupIds() {
+    console.log("🔄 Actualizando IDs de grupos...");
+    try {
+      const chats = await client.getChats();
+      const groupChats = chats.filter(c => c.isGroup);
+      
+      let updated = 0;
+      for (const birthday of birthdays) {
+        const foundGroup = groupChats.find(c => 
+          c.name && birthday.groupName && 
+          c.name.trim().toLowerCase() === birthday.groupName.trim().toLowerCase()
+        );
+        
+        if (foundGroup && birthday.groupId !== foundGroup.id._serialized) {
+          console.log(`  ✓ Actualizado: ${birthday.groupName} -> ${foundGroup.id._serialized}`);
+          birthday.groupId = foundGroup.id._serialized;
+          updated++;
+        }
+      }
+      
+      if (updated > 0) {
+        saveBirthdays();
+        console.log(`✅ Se actualizaron ${updated} grupo(s)`);
+      } else {
+        console.log("✅ Todos los grupos están actualizados");
+      }
+    } catch (err) {
+      console.error("❌ Error actualizando groupIds:", err.message);
+    }
+  }
+
+  // Función para obtener el chat de un grupo
+  async function getGroupChat(person) {
+    try {
+      const chats = await client.getChats();
+      
+      // Primero intentar por groupId
+      if (person.groupId) {
+        const chatById = chats.find(c => c.id._serialized === person.groupId);
+        if (chatById && chatById.isGroup) {
+          return chatById;
+        }
+      }
+      
+      // Si no funciona, buscar por nombre
+      if (person.groupName) {
+        const chatByName = chats.find(c => 
+          c.isGroup && c.name && 
+          c.name.trim().toLowerCase() === person.groupName.trim().toLowerCase()
+        );
+        
+        if (chatByName) {
+          // Actualizar el groupId
+          person.groupId = chatByName.id._serialized;
+          saveBirthdays();
+          console.log(`🔁 Actualizado groupId para ${person.groupName}`);
+          return chatByName;
+        }
+      }
+      
+      return null;
+    } catch (err) {
+      console.error(`❌ Error obteniendo chat:`, err.message);
+      return null;
     }
   }
 
@@ -132,9 +176,6 @@ client.on("ready", () => {
       
       // Verificar cumpleaños de hoy
       await checkBirthdays();
-      
-      // Si querés probar con una fecha específica, descomentá la siguiente línea:
-      // await checkBirthdays("17-10");
     } catch (err) {
       console.error("❌ Error en la comprobación inicial:", err);
     }
@@ -155,6 +196,7 @@ function getHelpText() {
 🔍 *Comandos básicos*
 !ping - Verificar si el bot está activo
 !help, !ayuda - Mostrar este mensaje de ayuda
+!grupos - Listar todos los grupos donde está el bot
 
 📅 *Gestión de cumpleaños*
 !agregar DD-MM Nombre - Agregar un cumpleaños
@@ -168,7 +210,9 @@ function getHelpText() {
   Ejemplo: !borrar Juan Pérez
 
 !forzar Nombre - Forzar reenvío del mensaje de cumpleaños
-  Ejemplo: !forzar Juan Pérez`;
+  Ejemplo: !forzar Juan Pérez
+
+!actualizar - Actualizar IDs de grupos`;
 }
 
 // Escuchar mensajes entrantes
@@ -185,6 +229,56 @@ client.on("message", async (msg) => {
     // ✅ Mostrar ayuda
     if (text === "!help" || text === "!ayuda") {
       msg.reply(getHelpText());
+    }
+
+    // 📋 Listar grupos
+    if (text === "!grupos") {
+      try {
+        const chats = await client.getChats();
+        const groups = chats.filter(c => c.isGroup);
+        
+        if (groups.length === 0) {
+          msg.reply("📭 No estoy en ningún grupo.");
+        } else {
+          const groupList = groups
+            .map((g, i) => `${i + 1}. ${g.name}\n   ID: ${g.id._serialized}`)
+            .join("\n\n");
+          msg.reply(`📋 *Grupos disponibles:*\n\n${groupList}`);
+        }
+      } catch (err) {
+        msg.reply("❌ Error al listar grupos: " + err.message);
+      }
+    }
+
+    // 🔄 Actualizar IDs de grupos
+    if (text === "!actualizar") {
+      msg.reply("🔄 Actualizando IDs de grupos...");
+      try {
+        const chats = await client.getChats();
+        const groupChats = chats.filter(c => c.isGroup);
+        
+        let updated = 0;
+        for (const birthday of birthdays) {
+          const foundGroup = groupChats.find(c => 
+            c.name && birthday.groupName && 
+            c.name.trim().toLowerCase() === birthday.groupName.trim().toLowerCase()
+          );
+          
+          if (foundGroup && birthday.groupId !== foundGroup.id._serialized) {
+            birthday.groupId = foundGroup.id._serialized;
+            updated++;
+          }
+        }
+        
+        if (updated > 0) {
+          saveBirthdays();
+          msg.reply(`✅ Se actualizaron ${updated} grupo(s)`);
+        } else {
+          msg.reply("✅ Todos los grupos están actualizados");
+        }
+      } catch (err) {
+        msg.reply("❌ Error actualizando: " + err.message);
+      }
     }
 
     // ✅ Agregar cumpleaños
@@ -322,7 +416,7 @@ client.on("message", async (msg) => {
       try {
         // Resetear el año de recordatorio
         if (person._meta) {
-          delete person._meta.lastReminderYear;
+          person._meta.lastReminderYear = null;
         }
         saveBirthdays();
 
@@ -351,10 +445,14 @@ client.on("message", async (msg) => {
 // Manejo de errores del cliente
 client.on("disconnected", (reason) => {
   console.log("⚠️ Cliente desconectado:", reason);
+  if (reason === "LOGOUT") {
+    console.log("🔄 La sesión fue cerrada. Borra la carpeta 'session/' y vuelve a iniciar.");
+  }
 });
 
 client.on("auth_failure", (msg) => {
   console.error("❌ Fallo en la autenticación:", msg);
+  console.log("💡 Borra la carpeta 'session/' y vuelve a vincular el dispositivo.");
 });
 
 // Manejo correcto del cierre
