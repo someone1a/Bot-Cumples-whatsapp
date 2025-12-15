@@ -4,3 +4,5 @@ birthdays.json
 session/
 .DS_Store
 reminders.json
+birthdays.json
+birthdays.json.backup

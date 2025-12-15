@@ -463,8 +463,14 @@ process.on("SIGINT", async () => {
     console.log("✅ Bot cerrado correctamente");
     process.exit(0);
   } catch (err) {
-    console.error("❌ Error al cerrar:", err.message);
-    process.exit(1);
+    // Ignorar errores de archivos bloqueados (EBUSY) - son normales en Windows
+    if (err.code === 'EBUSY' || err.message.includes('EBUSY')) {
+      console.warn("⚠️ Algunos archivos de sesión están bloqueados, pero el bot se cerró.");
+      process.exit(0);
+    } else {
+      console.error("❌ Error al cerrar:", err.message);
+      process.exit(1);
+    }
   }
 });
 
