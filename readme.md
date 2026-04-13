@@ -1,184 +1,177 @@
-# 🎂 Bot de Cumpleaños para WhatsApp
+# Bot de Cumpleaños para WhatsApp
 
-Un bot sencillo y funcional para **WhatsApp** que envía mensajes automáticos de cumpleaños a grupos, utilizando la librería [`whatsapp-web.js`](https://github.com/pedroslopez/whatsapp-web.js).
-
----
-
-## 📋 Tabla de Contenidos
-
-* [Características](#-características)
-* [Requisitos](#-requisitos)
-* [Instalación](#-instalación)
-* [Uso](#-uso)
-* [Estructura del Proyecto](#-estructura-del-proyecto)
-* [Comandos Disponibles](#-comandos-disponibles)
-* [Configuración](#-configuración)
-* [Notas de Seguridad](#-notas-de-seguridad)
-* [Solución de Problemas](#-solución-de-problemas)
-* [Futuras Mejoras](#-futuras-mejoras)
-* [Contribuir](#-contribuir)
-* [Licencia](#-licencia)
+Bot para WhatsApp que envía mensajes automáticos de cumpleaños a grupos. Incluye base de datos SQLite local, panel web y soporte para VPS con PM2.
 
 ---
 
-## ✨ Características
+## Características
 
-* 🗓️ **Gestión de cumpleaños** por grupo (agregar, listar, borrar).
-* ⏰ **Mensajes automáticos** enviados cada día a las 00:00 (zona horaria configurable).
-* 💾 **Sesión persistente** con `LocalAuth` (carpeta `session/`).
-* 🧩 Compatible con cualquier grupo donde el bot esté agregado.
-* 📦 **Archivo JSON** simple para almacenar los datos (`birthdays.json`).
-
----
-
-## ⚙️ Requisitos
-
-* **Node.js** 16 o superior
-* **npm** (gestor de paquetes de Node)
-* **WhatsApp instalado** y una cuenta activa en tu teléfono
+- Mensajes automáticos enviados cada día a las 00:00 (zona horaria configurable)
+- Base de datos SQLite local (`data/birthdays.db`)
+- Panel web en `http://localhost:3000` para ver y gestionar cumpleaños
+- Sesión persistente con `LocalAuth`
+- Migración automática desde `birthdays.json` si existe
+- Compatible con cualquier grupo donde el bot esté agregado
 
 ---
 
-## 🚀 Instalación
+## Requisitos
 
-1. **Clona o descarga** este repositorio:
-
-   ```bash
-   git clone https://github.com/someone1a/Bot-Cumples-whatsapp
-   cd Bot-Cumples-whatsapp
-   ```
-
-2. **Instala las dependencias:**
-
-   ```bash
-   npm install
-   ```
-
-3. **(Opcional)** Crea manualmente la carpeta `session/`.
-   El bot la generará automáticamente la primera vez que inicies sesión con `LocalAuth`.
+- Node.js 18 o superior
+- npm
+- WhatsApp instalado y una cuenta activa en tu teléfono
+- (Para VPS) PM2: `npm install -g pm2`
 
 ---
 
-## ▶️ Uso
+## Instalación
 
-1. **Inicia el bot:**
-
-   ```bash
-   npm start
-   # o
-   node index.js
-   ```
-
-2. En la primera ejecución aparecerá un **código QR** en la consola.
-   Escanealo desde tu teléfono:
-   **Menú → Dispositivos vinculados → Vincular un dispositivo.**
-
-3. Una vez conectado, verás:
-
-   ```
-   ✅ Bot conectado y listo.
-   ```
-
-   A partir de ese momento, el bot estará activo en tus grupos.
-
----
-
-## 🗂️ Estructura del Proyecto
-
-```
-📁 bot-cumpleanios/
-├── index.js          # Lógica principal del bot
-├── birthdays.json    # Base de datos de cumpleaños
-├── session/          # Sesión de WhatsApp (no subir al repositorio)
-├── package.json      # Dependencias y scripts
-└── README.md         # Este archivo
+```bash
+git clone https://github.com/someone1a/Bot-Cumples-whatsapp
+cd Bot-Cumples-whatsapp
+npm install
 ```
 
 ---
 
-## 💬 Comandos Disponibles
+## Uso
 
-| Comando                          | Descripción                                          | Ejemplo                     |
-| -------------------------------- | ---------------------------------------------------- | --------------------------- |
-| `!ping`                          | Verifica si el bot está activo.                      | `!ping`                     |
-| `!help` o `!ayuda`               | Muestra el mensaje de ayuda.                         | `!help`                     |
-| `!agregar DD-MM Nombre Apellido` | Agrega un cumpleaños al grupo actual.                | `!agregar 17-10 Juan Pérez` |
-| `!listar`                        | Muestra los cumpleaños registrados del grupo actual. | `!listar`                   |
-| `!borrar Nombre`                 | Borra un cumpleaños del grupo actual.                | `!borrar Juan Pérez`        |
+```bash
+npm start
+```
 
----
+La primera vez aparecerá un **código QR** en la consola. Escanealo desde tu teléfono:
+**Menú → Dispositivos vinculados → Vincular un dispositivo.**
 
-## ⚙️ Configuración
-
-* **Zona horaria:**
-  Editá la constante `TZ` en `index.js`.
-  Por defecto:
-
-  ```js
-  const TZ = 'America/Argentina/Buenos_Aires';
-  ```
-
-* **Mensajes personalizados:**
-  Podés extender la estructura de `birthdays.json` para agregar un campo:
-
-  ```json
-  {
-    "name": "Juan Pérez",
-    "date": "17-10",
-    "message": "¡Feliz cumpleaños, Juan! 🎉"
-  }
-  ```
+Una vez conectado el panel web queda disponible en `http://localhost:3000`.
 
 ---
 
-## 🔒 Notas de Seguridad
+## Panel Web
 
-* **No compartas** las carpetas `session/` ni el archivo `birthdays.json`.
-* No subas estas carpetas a repositorios públicos ni servicios en la nube.
-* Se recomienda agregar al `.gitignore`:
+Accedé desde el navegador a `http://localhost:3000` (o `http://IP_DEL_VPS:3000` si usás un servidor remoto).
 
-  ```
-  session/
-  birthdays.json
-  ```
-
----
-
-## 🧩 Solución de Problemas
-
-| Problema                 | Posible causa / solución                                                                 |
-| ------------------------ | ---------------------------------------------------------------------------------------- |
-| No aparece el QR         | Verificá que `whatsapp-web.js` y Puppeteer estén correctamente instalados.               |
-| El bot no envía mensajes | Asegurate de que el bot esté en el grupo correcto y tenga permisos para enviar mensajes. |
-| Error al iniciar sesión  | Borra la carpeta `session/` y vuelve a vincular el dispositivo.                          |
+Desde ahí podés:
+- Ver todos los cumpleaños con su estado (enviado / pendiente)
+- Agregar, editar y eliminar cumpleaños
+- Filtrar por grupo o buscar por nombre
+- Forzar el envío de un mensaje manualmente
+- Resetear el estado de enviado
 
 ---
 
-## 🚧 Futuras Mejoras
+## Estructura del Proyecto
 
-* 🔐 Confirmación interactiva antes de borrar cumpleaños.
-* 🌐 Panel web para administrar cumpleaños.
-* 🌍 Soporte de zonas horarias por grupo o usuario.
-* 🧠 Recordatorios anticipados (por ejemplo, “mañana cumple X”).
-
----
-
-## 🤝 Contribuir
-
-¡Las contribuciones son bienvenidas!
-Si querés mejorar el bot:
-
-1. Haz un **fork** del proyecto.
-2. Crea una nueva rama con tus cambios:
-
-   ```bash
-   git checkout -b feature/nueva-funcionalidad
-   ```
-3. Envía un **pull request** con una descripción clara de la mejora o corrección.
+```
+Bot-Cumples-whatsapp/
+├── index.js               # Bot principal + arranca el servidor web
+├── server.js              # API REST y servidor Express
+├── db.js                  # Capa de base de datos SQLite
+├── public/
+│   ├── index.html         # Panel web
+│   ├── styles.css
+│   └── app.js
+├── data/
+│   └── birthdays.db       # Base de datos SQLite (se crea automáticamente)
+├── session/               # Sesión de WhatsApp (no subir al repo)
+├── ecosystem.config.cjs   # Configuración de PM2
+└── package.json
+```
 
 ---
 
-## 📜 Licencia
+## Comandos de WhatsApp
 
-> ⚠️ Este proyecto **no tiene licencia explícita**.
-> Usalo bajo tu propia responsabilidad. 
+| Comando | Descripción | Ejemplo |
+|---|---|---|
+| `!ping` | Verifica si el bot está activo | `!ping` |
+| `!help` / `!ayuda` | Muestra la ayuda | `!help` |
+| `!grupos` | Lista los grupos disponibles | `!grupos` |
+| `!agregar DD-MM Nombre` | Agrega un cumpleaños al grupo actual | `!agregar 17-10 Juan Pérez` |
+| `!listar` | Muestra los cumpleaños del grupo actual | `!listar` |
+| `!borrar Nombre` | Elimina un cumpleaños | `!borrar Juan Pérez` |
+| `!forzar Nombre` | Fuerza el reenvío del mensaje | `!forzar Juan Pérez` |
+| `!actualizar` | Actualiza los IDs de grupos | `!actualizar` |
+
+---
+
+## Configuración
+
+**Zona horaria** — editá la constante `TZ` en `index.js` (línea 25):
+
+```js
+const TZ = "America/Argentina/Buenos_Aires";
+```
+
+**Puerto del panel web** — por defecto es `3000`. Podés cambiarlo con la variable de entorno `PORT`:
+
+```bash
+PORT=8080 npm start
+```
+
+---
+
+## Correr en VPS con PM2
+
+### Instalar PM2
+
+```bash
+npm install -g pm2
+```
+
+### Iniciar el bot
+
+```bash
+pm2 start ecosystem.config.cjs
+```
+
+### Comandos útiles
+
+```bash
+pm2 logs birthday-bot        # Ver logs en tiempo real
+pm2 restart birthday-bot     # Reiniciar
+pm2 stop birthday-bot        # Detener
+pm2 status                   # Estado de todos los procesos
+```
+
+### Arranque automático al reiniciar el VPS
+
+```bash
+pm2 startup
+pm2 save
+```
+
+### Abrir el puerto en el firewall (Ubuntu)
+
+```bash
+ufw allow 3000
+```
+
+---
+
+## Migración desde versión anterior
+
+Si tenés datos en un archivo `birthdays.json`, se migran automáticamente a SQLite la primera vez que iniciás el bot. El archivo original no se modifica.
+
+---
+
+## Seguridad
+
+No subas al repositorio las carpetas `session/` ni `data/`. Ya están incluidas en el `.gitignore`.
+
+---
+
+## Solución de Problemas
+
+| Problema | Solución |
+|---|---|
+| No aparece el QR | Verificá que puppeteer y chromium estén instalados correctamente |
+| El bot no envía mensajes | Verificá que el bot esté en el grupo y tenga permisos |
+| Error de sesión | Borrá la carpeta `session/` y volvé a vincular el dispositivo |
+| Panel web no carga | Verificá que el puerto 3000 esté abierto en el firewall del VPS |
+
+---
+
+## Licencia
+
+> Este proyecto no tiene licencia explícita. Usalo bajo tu propia responsabilidad.
