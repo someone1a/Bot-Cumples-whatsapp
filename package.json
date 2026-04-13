@@ -1,15 +1,17 @@
 {
   "name": "whatsapp-birthday-bot",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "whatsapp-web.js": "^1.23.0",
-    "qrcode-terminal": "^0.12.0",
+    "better-sqlite3": "^9.4.3",
+    "express": "^4.19.2",
+    "moment-timezone": "^0.5.45",
     "node-cron": "^3.0.3",
-    "moment-timezone": "^0.5.45"
+    "qrcode-terminal": "^0.12.0",
+    "whatsapp-web.js": "^1.23.0"
   }
 }
