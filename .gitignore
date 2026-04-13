@@ -6,3 +6,4 @@ session/
 reminders.json
 birthdays.json
 birthdays.json.backup
+.env
