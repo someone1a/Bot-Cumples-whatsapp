@@ -44,8 +44,8 @@ Un bot sencillo y funcional para **WhatsApp** que envía mensajes automáticos d
 1. **Clona o descarga** este repositorio:
 
    ```bash
-   git clone https://github.com/tuusuario/bot-cumpleanios.git
-   cd bot-cumpleanios
+   git clone https://github.com/someone1a/Bot-Cumples-whatsapp
+   cd Bot-Cumples-whatsapp
    ```
 
 2. **Instala las dependencias:**
